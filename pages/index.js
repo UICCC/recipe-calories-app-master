@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Playfair_Display } from "next/font/google";
+import { useRouter } from "next/router";
 
 const playfairDisplay = Playfair_Display({
   variable: "--font-playfair-display",
@@ -31,15 +32,13 @@ export default function Home() {
     "Eggplant Parmesan",
   ];
 
-  const shuffle = (array) => {
-    return array.sort(() => Math.random() - 0.5).slice(0, 9);
-  };
+  const shuffle = (array) => array.sort(() => Math.random() - 0.5).slice(0, 9);
 
   useEffect(() => {
     const fetchRecipeData = async () => {
       const recipePromises = shuffle(predefinedRecipes).map(async (recipe) => {
         const response = await fetch(
-          `https://api.calorieninjas.com/v1/nutrition?query=${recipe}`,
+          `https://api.calorieninjas.com/v1/nutrition?query=${(recipe)}`,
           {
             method: "GET",
             headers: {
@@ -47,21 +46,36 @@ export default function Home() {
             },
           }
         );
+
         const data = await response.json();
 
-const round = (items, key) =>
-  items?.reduce((sum, item) => sum + (item[key] || 0), 0).toFixed(1) || "N/A";
+        const round = (items, key) =>
+          items?.reduce((sum, item) => sum + (item[key] || 0), 0).toFixed(1) || "N/A";
 
-const totalCalories = round(data.items, "calories");
-const totalServingSize = round(data.items, "serving_size_g");
-const totalProtein = round(data.items, "protein_g");
+        const totalCalories = round(data.items, "calories");
+        const totalServingSize = round(data.items, "serving_size_g");
+        const totalProtein = round(data.items, "protein_g");
+
+        const imageResponse = await fetch(
+          `https://api.pexels.com/v1/search?query=${encodeURIComponent(recipe)}&per_page=1`,
+          {
+            headers: {
+              Authorization: "9Pa8e94e3oZr2BU4h4N0UkoOIz4npWv7MnTgMqmOBU6686ombLuGWZRs",
+            },
+          }
+        );
+        const imageData = await imageResponse.json();
+        const imageUrl =
+          imageData.photos.length > 0
+            ? imageData.photos[0].src.medium
+            : "https://via.placeholder.com/100";
 
         return {
           title: recipe,
           totalCalories: `${totalCalories} Calories`,
           totalServingSize: `${totalServingSize}g Serving`,
           totalProtein: `${totalProtein}g Protein`,
-          img: "https://via.placeholder.com/100",
+          img: imageUrl,
         };
       });
 
@@ -71,7 +85,7 @@ const totalProtein = round(data.items, "protein_g");
 
     fetchRecipeData();
   }, []);
-
+  const router = useRouter();
   return (
     <div className={playfairDisplay.variable}>
       <div className="min-h-screen bg-gray-100 py-10 px-5 text-center">
@@ -79,7 +93,10 @@ const totalProtein = round(data.items, "protein_g");
           Healthy Cooking Recipes <br /> and the right Nutrition.
         </h1>
         <p className="text-gray-600 mt-3">Browse Through Over 100,000+ Tasty Recipes.</p>
-        <button className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium mt-5 hover:bg-green-700">
+        <button
+          onClick={() => router.push("/more_recipes")}
+          className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium mt-5 hover:bg-green-700 cursor-pointer"
+        >
           MORE RECIPES
         </button>
 
@@ -95,7 +112,7 @@ const totalProtein = round(data.items, "protein_g");
                 className="w-24 h-24 rounded-full object-cover"
               />
               <div className="text-left">
-              <h2 className="text-lg font-bold text-red-500">{recipe.title}</h2>
+                <h2 className="text-lg font-bold text-red-500">{recipe.title}</h2>
                 <p className="text-sm text-yellow-500">🍽 {recipe.totalServingSize}</p>
                 <p className="text-sm font-semibold text-green-600">🔥 {recipe.totalCalories}</p>
                 <p className="text-sm font-semibold text-blue-600">💪 {recipe.totalProtein}</p>
